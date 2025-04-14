@@ -1,0 +1,17 @@
+{
+  "name": "V-Chats",
+  "short_name": "V-Chats",
+  "description": "A modern messaging application for instant communication",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4ade80",
+  "icons": [
+    {
+      "src": "logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
