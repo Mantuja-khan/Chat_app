@@ -8,7 +8,7 @@ export async function handleAuth({ email, password, name, otp }, isSignUp) {
     if (isSignUp) {
       if (!otp) {
         // Send OTP for verification
-        const response = await fetch('http://localhost:3000/api/email/send-otp', {
+        const response = await fetch('https://chat-app-gsjg.onrender.com/api/email/send-otp', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -81,7 +81,7 @@ export async function handleAuth({ email, password, name, otp }, isSignUp) {
 export async function resetPassword(email) {
   try {
     // Send OTP for password reset
-    const response = await fetch('http://localhost:3000/api/email/send-otp', {
+    const response = await fetch('https://chat-app-gsjg.onrender.com/api/email/send-otp', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
