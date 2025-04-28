@@ -18,7 +18,7 @@ export async function initializeNotifications() {
         console.log('Service Worker registered');
 
         // Get VAPID public key from server
-        const response = await fetch('http://localhost:3000/api/push/vapid-public-key');
+        const response = await fetch('https://chat-app-gsjg.onrender.com/api/push/vapid-public-key');
         const { key } = await response.json();
 
         // Request permission
@@ -36,7 +36,7 @@ export async function initializeNotifications() {
           const { data: { user } } = await supabase.auth.getUser();
           if (user) {
             // Send subscription to server
-            await fetch('http://localhost:3000/api/push/subscribe', {
+            await fetch('https://chat-app-gsjg.onrender.com/api/push/subscribe', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
