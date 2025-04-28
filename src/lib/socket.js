@@ -1,6 +1,7 @@
 import { io } from 'socket.io-client';
 
-const SOCKET_URL = 'http://localhost:3000';
+// 🔥 Updated backend URL
+const SOCKET_URL = 'https://chat-app-gsjg.onrender.com';
 
 let socket;
 let reconnectTimer;
