@@ -14,7 +14,7 @@ export default function ChatHeader({ user, currentUserId, showOnlineStatus = tru
 
   return (
     <>
-      <div className="p-3 md:p-4 bg-gray-50 dark:bg-gray-800 border-b dark:border-gray-700 flex items-center justify-between">
+      <div className="p-3 md:p-3 bg-gray-50 dark:bg-gray-800 border-b dark:border-gray-700 flex items-center justify-between">
         <div 
           className="flex items-center cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-lg"
           onClick={() => setShowProfile(true)}

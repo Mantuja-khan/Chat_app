@@ -133,36 +133,21 @@ export async function verifyResetOTP(email, otp) {
 
 export async function updatePassword(email, newPassword) {
   try {
-    // Get current session
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    
-    if (!session) {
-      // If no session, sign in with email OTP first
-      const { data: { session: otpSession }, error: otpError } = await supabase.auth.verifyOtp({
-        email,
-        type: 'email',
-        token: otpStore.get(`reset_${email}`)?.otp
-      });
-
-      if (otpError) throw otpError;
-      
-      // Update password with OTP session
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: newPassword
-      });
-
-      if (updateError) throw updateError;
-    } else {
-      // If session exists, update password directly
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: newPassword
-      });
-
-      if (updateError) throw updateError;
+    // Get the stored OTP
+    const storedOTP = otpStore.get(`reset_${email}`);
+    if (!storedOTP) {
+      throw new Error("Please verify your email first");
     }
 
-    // Force sign out to ensure old sessions are invalidated
-    await supabase.auth.signOut();
+    // Update user's password directly
+    const { error: updateError } = await supabase.auth.updateUser({
+      password: newPassword
+    });
+
+    if (updateError) throw updateError;
+
+    // Clear stored OTP
+    otpStore.delete(`reset_${email}`);
 
     return { 
       error: null,

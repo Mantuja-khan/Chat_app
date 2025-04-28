@@ -13,6 +13,7 @@ import FriendRequestList from './FriendRequestList'
 import BottomNavbar from './BottomNavbar'
 import MembersList from './MembersList'
 import MyContactsList from './MyContactsList'
+import BlockedUsersList from './BlockedUsersList'
 import { BsArrowLeft } from 'react-icons/bs'
 
 export default function ChatList({ currentUser, onSelectUser, activeView, onViewChange }) {
@@ -26,6 +27,7 @@ export default function ChatList({ currentUser, onSelectUser, activeView, onView
   const [unreadCounts, setUnreadCounts] = useState({})
   const [friendRequests, setFriendRequests] = useState([])
   const [friendIds, setFriendIds] = useState([])
+  const [blockedUsers, setBlockedUsers] = useState([])
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768)
 
   useEffect(() => {
@@ -48,6 +50,7 @@ export default function ChatList({ currentUser, onSelectUser, activeView, onView
         await fetchLatestMessages()
         await fetchUnreadCounts()
         await fetchFriendRequests()
+        await fetchBlockedUsers()
 
         if (!mounted) return
 
@@ -179,6 +182,29 @@ export default function ChatList({ currentUser, onSelectUser, activeView, onView
     }
   }
 
+  const fetchBlockedUsers = async () => {
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('blocked_users')
+        .eq('id', currentUser.id)
+        .single()
+
+      if (profile?.blocked_users?.length) {
+        const { data: blockedProfiles } = await supabase
+          .from('profiles')
+          .select('*')
+          .in('id', profile.blocked_users)
+
+        setBlockedUsers(blockedProfiles || [])
+      } else {
+        setBlockedUsers([])
+      }
+    } catch (error) {
+      console.error('Error fetching blocked users:', error)
+    }
+  }
+
   useEffect(() => {
     const debounceTimeout = setTimeout(() => {
       fetchUsers()
@@ -208,12 +234,27 @@ export default function ChatList({ currentUser, onSelectUser, activeView, onView
     }
   }
 
+  const handleUserUnblocked = (userId) => {
+    setBlockedUsers(prev => prev.filter(user => user.id !== userId))
+    fetchUsers(true)
+  }
+
   const renderContent = () => {
     switch (activeView) {
+      case 'blocked':
+        return (
+          <BlockedUsersList
+            blockedUsers={blockedUsers}
+            currentUserId={currentUser.id}
+            onBack={() => onViewChange('chats')}
+            onUserUnblocked={handleUserUnblocked}
+          />
+        )
+
       case 'requests':
         return (
           <div className="flex-1 flex flex-col">
-            <div className="p-4 bg-gray-50 border-b flex items-center">
+            <div className="p-2 bg-gray-50 border-b flex items-center">
               <button
                 onClick={() => onViewChange('chats')}
                 className="p-2 hover:bg-gray-100 rounded-full mr-2"
@@ -254,27 +295,30 @@ export default function ChatList({ currentUser, onSelectUser, activeView, onView
       default:
         return (
           <>
-            <div className="flex items-center p-2 bg-gray-50 border-b">
-              <ProfileSection 
-                currentUser={currentUser} 
-                compact={true} 
-                isEditing={showProfileEdit}
-                onCloseEdit={() => setShowProfileEdit(false)}
-              />
-              <div className="flex-1 px-2">
-                <SearchBar 
-                  value={searchQuery}
-                  onChange={setSearchQuery}
-                  placeholder="Search or start new chat"
+            <div className="sticky top-0 z-10">
+              <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 border-b dark:border-gray-700">
+                <ProfileSection 
+                  currentUser={currentUser} 
+                  compact={true} 
+                  isEditing={showProfileEdit}
+                  onCloseEdit={() => setShowProfileEdit(false)}
+                />
+                <div className="flex-1 px-4">
+                  <SearchBar 
+                    value={searchQuery}
+                    onChange={setSearchQuery}
+                    placeholder="Search or start new chat"
+                  />
+                </div>
+                <MenuButton 
+                  onEditProfile={() => setShowProfileEdit(true)}
+                  onToggleFriendRequests={() => onViewChange('requests')}
+                  onToggleMyContacts={() => onViewChange('contacts')}
+                  onToggleMembers={() => onViewChange('members')}
+                  onToggleBlockedUsers={() => onViewChange('blocked')}
+                  friendRequestCount={friendRequests.length}
                 />
               </div>
-              <MenuButton 
-                onEditProfile={() => setShowProfileEdit(true)}
-                onToggleFriendRequests={() => onViewChange('requests')}
-                onToggleMyContacts={() => onViewChange('contacts')}
-                onToggleMembers={() => onViewChange('members')}
-                friendRequestCount={friendRequests.length}
-              />
             </div>
 
             {error && <ErrorMessage message={error} onRetry={() => fetchUsers()} />}
@@ -285,7 +329,7 @@ export default function ChatList({ currentUser, onSelectUser, activeView, onView
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
                 </div>
               ) : filteredUsers.length === 0 ? (
-                <div className="text-center p-8 text-gray-500">
+                <div className="text-center p-8 text-gray-500 dark:text-gray-400">
                   <p className="mb-2">No chats found</p>
                   <p className="text-sm">Start a new conversation or check your friend requests</p>
                 </div>
@@ -312,21 +356,21 @@ export default function ChatList({ currentUser, onSelectUser, activeView, onView
   }
 
   return (
-    <div className="bg-white w-full md:w-1/3 border-r flex flex-col h-full">
+    <div className="bg-white dark:bg-gray-800 w-full md:w-1/3 border-r dark:border-gray-700 flex flex-col h-full">
       {renderContent()}
       
       {isMobile && (
-        <BottomNavbar 
-          onToggleChats={() => onViewChange('chats')}
-          onToggleMyContacts={() => onViewChange('contacts')}
-          onToggleMembers={() => onViewChange('members')}
-          onToggleFriendRequests={() => onViewChange('requests')}
-          friendRequestCount={friendRequests.length}
-          activeTab={activeView}
-        />
+        <div className="sticky bottom-0 z-10">
+          <BottomNavbar 
+            onToggleChats={() => onViewChange('chats')}
+            onToggleMyContacts={() => onViewChange('contacts')}
+            onToggleMembers={() => onViewChange('members')}
+            onToggleFriendRequests={() => onViewChange('requests')}
+            friendRequestCount={friendRequests.length}
+            activeTab={activeView}
+          />
+        </div>
       )}
-      
-      {isMobile && <div className="h-16"></div>}
     </div>
   )
 }

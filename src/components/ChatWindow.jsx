@@ -6,17 +6,14 @@ import MessageList from './MessageList'
 import MessageInput from './MessageInput'
 import EmptyChatState from './EmptyChatState'
 import { getMessages, subscribeToMessages } from '../utils/messageUtils'
-import { getFriendshipStatus } from '../utils/friendUtils'
 import { isUserBlocked } from '../utils/userUtils'
 import ErrorMessage from './ErrorMessage'
 import { emitActiveChatUser } from '../lib/socket'
-import FriendRequestButton from './FriendRequestButton'
 
 export default function ChatWindow({ currentUser, selectedUser, onBack, isMobile }) {
   const [messages, setMessages] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [friendshipStatus, setFriendshipStatus] = useState(null)
   const [isBlocked, setIsBlocked] = useState(false)
   const messageSubscription = useRef(null)
 
@@ -25,7 +22,6 @@ export default function ChatWindow({ currentUser, selectedUser, onBack, isMobile
 
     if (selectedUser) {
       fetchMessages()
-      checkFriendshipStatus()
       checkBlockStatus()
       
       if (messageSubscription.current) {
@@ -79,12 +75,6 @@ export default function ChatWindow({ currentUser, selectedUser, onBack, isMobile
     setIsBlocked(blocked)
   }
 
-  const checkFriendshipStatus = async () => {
-    if (!selectedUser) return
-    const { data } = await getFriendshipStatus(currentUser.id, selectedUser.id)
-    setFriendshipStatus(data)
-  }
-
   const handleMessageUpdate = (payload) => {
     if (payload.eventType === 'DELETE') {
       setMessages(prev => prev.filter(msg => msg.id !== payload.old.id))
@@ -134,8 +124,6 @@ export default function ChatWindow({ currentUser, selectedUser, onBack, isMobile
     return <EmptyChatState />
   }
 
-  const canChat = friendshipStatus?.status === 'accepted' && !isBlocked
-
   return (
     <div className="flex-1 flex flex-col bg-[#efeae2] dark:bg-gray-900 relative">
       <div className="flex items-center bg-gray-50 dark:bg-gray-800 border-b dark:border-gray-700">
@@ -152,50 +140,29 @@ export default function ChatWindow({ currentUser, selectedUser, onBack, isMobile
           <ChatHeader 
             user={selectedUser} 
             currentUserId={currentUser.id}
-            showOnlineStatus={canChat}
+            showOnlineStatus={!isBlocked}
           />
         </div>
       </div>
-    real time memory for the content 
-      {!canChat && (
-        <div className="p-4 bg-white dark:bg-gray-800 border-b dark:border-gray-700 text-center">
-          {isBlocked ? (
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
-              You cannot send messages to this user because they are blocked
-            </p>
-          ) : (
-            <>
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
-                You need to be friends to start chatting
-              </p>
-              <FriendRequestButton
-                currentUserId={currentUser.id}
-                otherUserId={selectedUser.id}
-                onRequestSent={checkFriendshipStatus}
-              />
-            </>
-          )}
-        </div>
-      )}
 
       {error && <ErrorMessage message={error} onRetry={fetchMessages} />}
       
-      <MessageList 
-        messages={messages}
-        currentUserId={currentUser.id}
-        loading={loading}
-      />
+      <div className="flex-1 overflow-y-auto">
+        <MessageList 
+          messages={messages}
+          currentUserId={currentUser.id}
+          loading={loading}
+        />
+      </div>
       
-      {canChat && (
-        <div className="pb-14 md:pb-14">
-          <MessageInput 
-            currentUser={currentUser}
-            selectedUser={selectedUser}
-            onMessageSent={handleMessageSent}
-            disabled={isBlocked}
-          />
-        </div>
-      )}
+      <div className="sticky bottom-0 w-full bg-white dark:bg-gray-800 border-t dark:border-gray-700">
+        <MessageInput 
+          currentUser={currentUser}
+          selectedUser={selectedUser}
+          onMessageSent={handleMessageSent}
+          disabled={isBlocked}
+        />
+      </div>
     </div>
   )
 }

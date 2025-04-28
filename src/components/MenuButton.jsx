@@ -1,10 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { BsThreeDotsVertical, BsArrowLeft, BsPeople, BsPersonPlus, BsPersonLinesFill, BsMoon, BsSun, BsBoxArrowRight, BsTrash, BsChatDots } from 'react-icons/bs'
+import { BsThreeDotsVertical, BsArrowLeft, BsPeople, BsPersonPlus, BsPersonLinesFill, BsMoon, BsSun, BsBoxArrowRight, BsTrash, BsChatDots, BsShieldSlash } from 'react-icons/bs'
 import { handleLogout } from '../utils/authUtils'
 import DeleteAccountModal from './DeleteAccountModal'
 import { useTheme } from '../hooks/useTheme'
 
-export default function MenuButton({ onEditProfile, onToggleFriendRequests, onToggleMyContacts, onToggleMembers, friendRequestCount = 0 }) {
+export default function MenuButton({ 
+  onEditProfile, 
+  onToggleFriendRequests, 
+  onToggleMyContacts, 
+  onToggleMembers,
+  onToggleBlockedUsers, 
+  friendRequestCount = 0 
+}) {
   const [isOpen, setIsOpen] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const menuRef = useRef(null)
@@ -34,42 +41,18 @@ export default function MenuButton({ onEditProfile, onToggleFriendRequests, onTo
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [isOpen])
 
-  const handleEditProfile = () => {
-    onEditProfile()
+  const handleMenuClick = (callback) => {
+    callback()
     setIsOpen(false)
-  }
-
-  const handleFriendRequests = () => {
-    onToggleFriendRequests()
-    setIsOpen(false)
-  }
-
-  const handleMyContacts = () => {
-    onToggleMyContacts()
-    setIsOpen(false)
-  }
-
-  const handleMembers = () => {
-    onToggleMembers()
-    setIsOpen(false)
-  }
-
-  const handleThemeToggle = () => {
-    toggleDarkMode()
-    setIsOpen(false)
-  }
-
-  const toggleMenu = () => {
-    setIsOpen(!isOpen)
   }
 
   return (
     <div className="relative" ref={menuRef}>
       <button
-        onClick={toggleMenu}
-        className={`p-2 hover:bg-gray-100 rounded-full relative ${!isMobile ? 'fixed left-4 top-4 z-50' : ''}`}
+        onClick={() => setIsOpen(!isOpen)}
+        className={`p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full relative ${!isMobile ? 'fixed left-4 top-4 z-50' : ''}`}
       >
-        <BsThreeDotsVertical className="h-5 w-5 text-gray-600" />
+        <BsThreeDotsVertical className="h-5 w-5 text-gray-600 dark:text-gray-300" />
         {friendRequestCount > 0 && (
           <span className="absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
             {friendRequestCount}
@@ -77,65 +60,60 @@ export default function MenuButton({ onEditProfile, onToggleFriendRequests, onTo
         )}
       </button>
 
-      {/* Overlay for mobile */}
       {isOpen && (
         <div className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40" />
       )}
 
-      {/* Menu content */}
       <div
-        className={`fixed md:absolute ${isMobile ? 'top-0' : 'top-16 left-4'} right-0 w-48 bg-white md:rounded-md shadow-lg z-50 transition-all duration-300 ${
+        className={`fixed md:absolute ${isMobile ? 'top-0' : 'top-16 left-4'} right-0 w-48 bg-white dark:bg-gray-800 md:rounded-md shadow-lg z-50 transition-all duration-300 ${
           isMobile 
             ? `transform ${isOpen ? 'translate-x-0' : 'translate-x-full'}`
             : isOpen ? 'opacity-100 visible' : 'opacity-0 invisible'
         } h-full md:h-auto`}
       >
         <div className="flex flex-col h-full">
-          {/* Mobile header with back button */}
-          <div className="md:hidden p-4 bg-gray-50 border-b flex items-center">
-            <button
-              onClick={() => setIsOpen(false)}
-              className="p-1 hover:bg-gray-100 rounded-full mr-2"
-            >
-              <BsArrowLeft className="h-5 w-5 text-gray-600" />
-            </button>
-            <h3 className="text-lg font-semibold">Menu</h3>
-          </div>
+          {isMobile && (
+            <div className="p-4 bg-gray-50 dark:bg-gray-800 border-b dark:border-gray-700 flex items-center">
+              <button
+                onClick={() => setIsOpen(false)}
+                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full mr-2"
+              >
+                <BsArrowLeft className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+              </button>
+              <h3 className="text-lg font-semibold dark:text-gray-200">Menu</h3>
+            </div>
+          )}
 
-          {/* Menu items */}
           <div className="flex-1">
             {!isMobile && (
               <>
                 <button
-                  onClick={() => {
-                    onToggleMembers()
-                    setIsOpen(false)
-                  }}
-                  className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                  onClick={() => handleMenuClick(() => onToggleMembers())}
+                  className="w-full text-left px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
                 >
                   <BsChatDots className="h-5 w-5 mr-2" />
                   Chats
                 </button>
 
                 <button
-                  onClick={handleMyContacts}
-                  className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                  onClick={() => handleMenuClick(() => onToggleMyContacts())}
+                  className="w-full text-left px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
                 >
                   <BsPersonLinesFill className="h-5 w-5 mr-2" />
                   My Contacts
                 </button>
 
                 <button
-                  onClick={handleMembers}
-                  className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                  onClick={() => handleMenuClick(() => onToggleMembers())}
+                  className="w-full text-left px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
                 >
                   <BsPeople className="h-5 w-5 mr-2" />
                   Members
                 </button>
 
                 <button
-                  onClick={handleFriendRequests}
-                  className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 flex items-center justify-between"
+                  onClick={() => handleMenuClick(() => onToggleFriendRequests())}
+                  className="w-full text-left px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-between"
                 >
                   <div className="flex items-center">
                     <BsPersonPlus className="h-5 w-5 mr-2" />
@@ -151,8 +129,16 @@ export default function MenuButton({ onEditProfile, onToggleFriendRequests, onTo
             )}
 
             <button
-              onClick={handleThemeToggle}
-              className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+              onClick={() => handleMenuClick(() => onToggleBlockedUsers())}
+              className="w-full text-left px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
+            >
+              <BsShieldSlash className="h-5 w-5 mr-2" />
+              Blocked Users
+            </button>
+
+            <button
+              onClick={() => handleMenuClick(toggleDarkMode)}
+              className="w-full text-left px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
             >
               {darkMode ? (
                 <>
@@ -168,24 +154,24 @@ export default function MenuButton({ onEditProfile, onToggleFriendRequests, onTo
             </button>
 
             <button
-              onClick={handleEditProfile}
-              className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+              onClick={() => handleMenuClick(() => setShowProfileEdit(true))}
+              className="w-full text-left px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
             >
               <BsPersonLinesFill className="h-5 w-5 mr-2" />
               Edit profile
             </button>
 
             <button
-              onClick={() => setShowDeleteModal(true)}
-              className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-gray-100 flex items-center"
+              onClick={() => handleMenuClick(() => setShowDeleteModal(true))}
+              className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
             >
               <BsTrash className="h-5 w-5 mr-2" />
               Delete account
             </button>
 
             <button
-              onClick={handleLogout}
-              className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-gray-100 flex items-center"
+              onClick={() => handleMenuClick(handleLogout)}
+              className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
             >
               <BsBoxArrowRight className="h-5 w-5 mr-2" />
               Logout

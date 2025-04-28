@@ -42,6 +42,10 @@ export default function MessageList({ messages, currentUserId, loading }) {
   }
 
   const handleDeleteSelected = async () => {
+    if (!confirm(`Delete ${selectedMessages.size} message${selectedMessages.size > 1 ? 's' : ''}?`)) {
+      return
+    }
+
     try {
       const promises = Array.from(selectedMessages).map(messageId => 
         deleteMessage(messageId, 'me', currentUserId)
@@ -51,6 +55,13 @@ export default function MessageList({ messages, currentUserId, loading }) {
       setIsSelectionMode(false)
     } catch (error) {
       console.error('Error deleting messages:', error)
+      alert('Failed to delete some messages. Please try again.')
+    }
+  }
+
+  const handleLongPress = () => {
+    if (!isSelectionMode) {
+      setIsSelectionMode(true)
     }
   }
 
@@ -76,8 +87,8 @@ export default function MessageList({ messages, currentUserId, loading }) {
   return (
     <>
       {isSelectionMode && (
-        <div className="bg-white p-2 flex justify-between items-center border-b">
-          <div className="text-sm text-gray-600">
+        <div className="sticky top-0 z-10 bg-white dark:bg-gray-800 p-2 flex justify-between items-center border-b dark:border-gray-700">
+          <div className="text-sm text-gray-600 dark:text-gray-300">
             {selectedMessages.size} message{selectedMessages.size !== 1 ? 's' : ''} selected
           </div>
           <div className="flex gap-2">
@@ -86,13 +97,14 @@ export default function MessageList({ messages, currentUserId, loading }) {
                 setSelectedMessages(new Set())
                 setIsSelectionMode(false)
               }}
-              className="px-3 py-1 text-sm text-gray-600 hover:bg-gray-100 rounded"
+              className="px-3 py-1 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
             >
               Cancel
             </button>
             <button
               onClick={handleDeleteSelected}
-              className="px-3 py-1 text-sm text-white bg-red-500 hover:bg-red-600 rounded flex items-center gap-1"
+              disabled={selectedMessages.size === 0}
+              className="px-3 py-1 text-sm text-white bg-red-500 hover:bg-red-600 rounded flex items-center gap-1 disabled:opacity-50"
             >
               <BsTrash size={14} />
               Delete
@@ -110,12 +122,7 @@ export default function MessageList({ messages, currentUserId, loading }) {
             isSelectionMode={isSelectionMode}
             isSelected={selectedMessages.has(message.id)}
             onSelect={() => toggleMessageSelection(message.id)}
-            onLongPress={() => {
-              if (!isSelectionMode) {
-                setIsSelectionMode(true)
-                toggleMessageSelection(message.id)
-              }
-            }}
+            onLongPress={handleLongPress}
           />
         ))}
         <div ref={messagesEndRef} />

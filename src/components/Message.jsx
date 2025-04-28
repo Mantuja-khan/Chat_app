@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { format } from 'date-fns'
-import { BsCheck, BsCheckAll, BsDownload } from 'react-icons/bs'
+import { BsCheck2, BsCheck2All } from 'react-icons/bs'
 import MessageDeleteModal from './MessageDeleteModal'
 
 export default function Message({ 
@@ -17,6 +17,8 @@ export default function Message({
   const [isDownloaded, setIsDownloaded] = useState(false)
   const longPressTimer = useRef(null)
   const [isLongPress, setIsLongPress] = useState(false)
+  const [touchStartTime, setTouchStartTime] = useState(0)
+  const isMobile = window.innerWidth <= 768
 
   useEffect(() => {
     if (message.type === 'image') {
@@ -25,31 +27,54 @@ export default function Message({
     }
   }, [message.id])
 
-  const handleTouchStart = () => {
-    longPressTimer.current = setTimeout(() => {
-      setIsLongPress(true)
-      onLongPress()
-    }, 500)
+  const handleTouchStart = (e) => {
+    if (isMobile) {
+      setTouchStartTime(Date.now())
+      longPressTimer.current = setTimeout(() => {
+        setIsLongPress(true)
+        onLongPress()
+      }, 500)
+    }
   }
 
-  const handleTouchEnd = () => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current)
+  const handleTouchEnd = (e) => {
+    if (isMobile) {
+      const touchDuration = Date.now() - touchStartTime
+      if (longPressTimer.current) {
+        clearTimeout(longPressTimer.current)
+      }
+      if (!isLongPress && isSelectionMode) {
+        onSelect()
+      }
+      setIsLongPress(false)
     }
-    if (!isLongPress && isSelectionMode) {
-      onSelect()
+  }
+
+  const handleMouseDown = (e) => {
+    if (!isMobile) {
+      setTouchStartTime(Date.now())
     }
-    setIsLongPress(false)
+  }
+
+  const handleMouseUp = (e) => {
+    if (!isMobile) {
+      const clickDuration = Date.now() - touchStartTime
+      if (clickDuration > 250) { // Double click threshold
+        onLongPress()
+      } else if (isSelectionMode) {
+        onSelect()
+      }
+    }
   }
 
   const getMessageStatus = () => {
     if (isOwn) {
       return message.is_seen ? (
-        <BsCheckAll className="text-sky-500" size={14} />
+        <BsCheck2All className="text-sky-500" size={16} />
       ) : message.is_delivered ? (
-        <BsCheckAll className="text-gray-500" size={14} />
+        <BsCheck2All className="text-gray-500 dark:text-gray-400" size={16} />
       ) : (
-        <BsCheck className="text-gray-500" size={14} />
+        <BsCheck2 className="text-gray-500 dark:text-gray-400" size={16} />
       )
     }
     return null
@@ -60,31 +85,6 @@ export default function Message({
       onSelect()
     } else if (isOwn && !message.deleted_for_everyone) {
       setShowDeleteModal(true)
-    }
-  }
-
-  const handleImageDownload = async (e) => {
-    e.stopPropagation()
-    try {
-      const response = await fetch(message.image_url)
-      const blob = await response.blob()
-      const url = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = `image.${blob.type.split('/')[1]}`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      window.URL.revokeObjectURL(url)
-      
-      const downloadedImages = JSON.parse(localStorage.getItem('downloadedImages') || '{}')
-      downloadedImages[message.id] = true
-      localStorage.setItem('downloadedImages', JSON.stringify(downloadedImages))
-      
-      setIsDownloaded(true)
-    } catch (error) {
-      console.error('Error downloading image:', error)
-      alert('Failed to download image. Please try again.')
     }
   }
 
@@ -104,19 +104,8 @@ export default function Message({
               onLoad={() => setImageLoaded(true)}
             />
           </div>
-          {imageLoaded && !isOwn && !isDownloaded && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <button
-                onClick={handleImageDownload}
-                className="bg-black bg-opacity-50 text-white px-4 py-2 rounded-full flex items-center gap-2 hover:bg-opacity-70 transition-all"
-              >
-                <BsDownload size={20} />
-                <span>Download to View</span>
-              </button>
-            </div>
-          )}
           {!imageLoaded && (
-            <div className="flex items-center justify-center h-32 bg-gray-100 rounded-lg">
+            <div className="flex items-center justify-center h-32 bg-gray-100 dark:bg-gray-700 rounded-lg">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
             </div>
           )}
@@ -134,22 +123,19 @@ export default function Message({
         onClick={handleMessageClick}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
-        onMouseDown={handleTouchStart}
-        onMouseUp={handleTouchEnd}
-        onMouseLeave={handleTouchEnd}
+        onMouseDown={handleMouseDown}
+        onMouseUp={handleMouseUp}
       >
-        {isSelectionMode && (
-          <div 
-            className={`absolute left-0 top-1/2 -translate-y-1/2 -ml-6 w-5 h-5 rounded-full border-2 
-              ${isSelected ? 'bg-green-500 border-green-500' : 'border-gray-300'}`}
-          />
-        )}
         <div
-          className={`max-w-[70%] md:max-w-[50%] rounded-lg p-2.5 ${
-            isOwn ? 'bg-green-500 text-white' : 'bg-white'
-          } cursor-pointer hover:opacity-90 shadow-sm ${
-            isSelectionMode ? 'ml-8' : ''
-          }`}
+          className={`max-w-[70%] md:max-w-[50%] rounded-lg p-2.5 transition-colors duration-200 ${
+            isOwn 
+              ? isSelected 
+                ? 'bg-green-600 text-white'
+                : 'bg-green-500 text-white' 
+              : isSelected
+                ? 'bg-gray-200 dark:bg-gray-600'
+                : 'bg-white dark:bg-gray-800 dark:text-gray-200'
+          } cursor-pointer hover:opacity-90 shadow-sm`}
         >
           {renderContent()}
           <div className="flex justify-end items-center gap-1.5 mt-1">
